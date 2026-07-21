@@ -1,0 +1,15 @@
+{
+    "name": "pedrolois/moodle-customfield_keywords",
+    "description": "Moodle custom course field type: multi-value keywords with ajax autocomplete, backed by core_tag.",
+    "type": "moodle-customfield",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Pedro Lois"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/pedrolois/moodle-customfield_keywords/issues",
+        "source": "https://github.com/pedrolois/moodle-customfield_keywords"
+    }
+}
