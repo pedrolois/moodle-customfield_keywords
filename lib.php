@@ -51,10 +51,17 @@ function customfield_keywords_get_tagged_courses($tag, $exclusivemode = false, $
 
     $perpage = $exclusivemode ? $CFG->coursesperpage : 5;
 
+    // tag_instance.itemid is this plugin's own customfield_data.id (see
+    // data_controller.php class docblock for why - it namespaces each Keywords
+    // field's tags separately, so it is never the course id directly). Join
+    // through customfield_data to resolve back to the tagged course, and
+    // de-duplicate since more than one Keywords field on the same course could
+    // share the same keyword.
     $ctxselect = context_helper::get_preload_record_columns_sql('ctx');
-    $sql = "SELECT c.*, $ctxselect
+    $sql = "SELECT DISTINCT c.*, $ctxselect
               FROM {course} c
-              JOIN {tag_instance} ti ON ti.itemid = c.id
+              JOIN {customfield_data} cfd ON cfd.instanceid = c.id
+              JOIN {tag_instance} ti ON ti.itemid = cfd.id
               JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = :contextcourse
              WHERE ti.tagid = :tagid AND ti.itemtype = :itemtype AND ti.component = :component
                AND c.id <> :siteid
