@@ -164,6 +164,42 @@ So that's the mechanism this plugin relies on:
   id and context — since, per above, that's the one thing core's restore never does for
   third-party tag areas on its own.
 
+## Bulk import via `tool_uploadcourse`
+
+Keyword values can be set through Moodle's course upload CSV (**Site administration >
+Courses > Upload courses**), using a `customfield_<shortname>` column with a comma-separated
+list of keywords, exactly like any other custom field column
+(see [Upload courses](https://docs.moodle.org/en/Upload_courses)). This was broken through
+1.0.5 and fixed in 1.0.6 — see Changelog below.
+
+## Changelog
+
+### 1.0.6 (2026-08-21)
+
+- **Fix:** `tool_uploadcourse` CSV imports silently discarded the Keywords column instead of
+  saving it. Root cause: `tool_uploadcourse`'s
+  `helper::get_custom_course_field_data()` reuses `instance_form_before_set_data()` — a hook
+  meant to prefill the course edit form from existing data — to instead turn a value it already
+  computed from the CSV into the instance property, by calling `$controller->set('value', ...)`
+  on a temporary placeholder controller (`id=1`, never a real persisted row) just before invoking
+  it. This plugin's override of that method ignored whatever the caller had already set and
+  always looked up `tag_instance` by the placeholder's id instead — normally empty — discarding
+  the CSV value and silently saving an empty keyword list, all without any error or warning.
+  `instance_form_before_set_data()` now prefers an already-set `value` (accepting either the
+  JSON array this class itself writes on save, or the raw comma-separated string
+  `tool_uploadcourse` sets directly from the CSV) over the `tag_instance` lookup, falling back to
+  the lookup only when no value has been set — which keeps the real course edit form's behaviour
+  unchanged (its controller has no pre-set value until this method runs, since it starts from the
+  field instance's *persisted* row, not a placeholder). Verified against Moodle 4.5 with an
+  actual `tool_uploadcourse` CSV import, both via CLI (`admin/tool/uploadcourse/cli/uploadcourse.php`)
+  and the admin UI.
+- **Fix:** `mark_keywords_as_standard()` fetched only 4 columns (`id, name, rawname,
+  isstandard`) via `core_tag_tag::get_by_name_bulk()`, but `core_tag_tag::update()` expects the
+  full tag record — Moodle detected the gap and transparently re-fetched the record itself, but
+  logged a `DEBUG_DEVELOPER` notice ("`core_tag_tag::update() must be called on fully retrieved
+  tag object`") on every save as a result. Now fetches all columns (`*`) so no re-fetch or
+  notice happens.
+
 ## License
 
 GNU GPL v3 or later, same as Moodle core.
