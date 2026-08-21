@@ -135,12 +135,41 @@ class data_controller extends \core_customfield\data_controller {
     /**
      * Prepares the custom field data to pass to mform->set_data().
      *
-     * Loads the current keyword list from core_tag_tag instead of from
-     * customfield_data, since that is where the live values are read from.
+     * Normally loads the current keyword list from core_tag_tag, since that is
+     * where the live values are read from. But callers other than the actual
+     * course edit form - tool_uploadcourse's helper::get_custom_course_field_data()
+     * being the only known one - reuse this same hook to turn a value they
+     * already computed themselves (e.g. from an import CSV) into the instance
+     * property, by calling $controller->set('value', ...) just before this runs
+     * on a controller instance that is a temporary placeholder (id=1, not a real
+     * persisted row). Falling through to the tag_instance lookup in that case
+     * would look up itemid=1's tags instead - almost always empty - discarding
+     * the caller's value. Preferring an already-set 'value' over the tag lookup
+     * keeps both callers working: the edit form's controller is hydrated from a
+     * real persisted row (or has no value yet for a brand new course), while
+     * tool_uploadcourse's placeholder controller has a value but no meaningful
+     * tag_instance rows of its own.
+     *
+     * The set value can be in either shape depending on who set it: the JSON
+     * array this class itself writes in instance_form_save(), or the raw
+     * comma-separated string tool_uploadcourse's helper sets directly from the
+     * CSV column (that helper never calls instance_form_save(), only this
+     * method, so its plain string never gets JSON-encoded first). Reuse the
+     * same comma-split parsing instance_form_save() applies to a non-array
+     * value, so both shapes normalise the same way.
      *
      * @param \stdClass $instance
      */
     public function instance_form_before_set_data(\stdClass $instance) {
+        $rawvalue = $this->data->get('value');
+        if ($rawvalue !== null && $rawvalue !== '') {
+            $keywords = json_decode($rawvalue, true);
+            if (!is_array($keywords)) {
+                $keywords = preg_split('/\s*,\s*/', trim($rawvalue), -1, PREG_SPLIT_NO_EMPTY);
+            }
+            $instance->{$this->get_form_element_name()} = $keywords;
+            return;
+        }
         $instance->{$this->get_form_element_name()} = $this->get_keywords((int) $this->get('id'));
     }
 
@@ -215,8 +244,12 @@ class data_controller extends \core_customfield\data_controller {
         if (empty($keywords)) {
             return;
         }
+        // Fetch all columns ('*'), not just the ones this method reads: update()
+        // below needs the full record (e.g. tagcollid, userid) or it re-fetches
+        // itself and logs a DEBUG_DEVELOPER notice that the object it was given
+        // was incomplete.
         $tagcollid = \core_tag_area::get_collection(self::TAG_COMPONENT, self::TAG_ITEMTYPE);
-        $tags = \core_tag_tag::get_by_name_bulk($tagcollid, $keywords, 'id, name, rawname, isstandard');
+        $tags = \core_tag_tag::get_by_name_bulk($tagcollid, $keywords, '*');
         foreach ($tags as $tag) {
             if ($tag !== null && !$tag->isstandard) {
                 $tag->update(['isstandard' => 1]);
