@@ -23,8 +23,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Returns courses tagged with a given keyword, for the tag area
  * (component=customfield_keywords, itemtype=course_keyword).
@@ -52,7 +50,7 @@ function customfield_keywords_get_tagged_courses($tag, $exclusivemode = false, $
 
     $perpage = $exclusivemode ? $CFG->coursesperpage : 5;
 
-    // tag_instance.itemid is this plugin's own customfield_data.id (see
+    // The tag_instance.itemid is this plugin's own customfield_data.id (see
     // data_controller.php class docblock for why - it namespaces each Keywords
     // field's tags separately, so it is never the course id directly). Join
     // through customfield_data to resolve back to the tagged course, and
