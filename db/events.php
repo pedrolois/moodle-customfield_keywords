@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Customfield Keywords Type
+ * Event observers for customfield_keywords.
  *
  * @package   customfield_keywords
  * @author    Pedro Luis Garcia Leiva
@@ -25,9 +25,17 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'customfield_keywords';
-$plugin->version   = 2026092500;
-$plugin->requires  = 2024100100;
-$plugin->release   = '1.0.7';
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->supported = [405, 405];
+$observers = [
+    [
+        'eventname' => '\core\event\tag_added',
+        'callback' => '\customfield_keywords\observer::tag_added',
+    ],
+    [
+        'eventname' => '\core\event\tag_removed',
+        'callback' => '\customfield_keywords\observer::tag_removed',
+    ],
+    [
+        'eventname' => '\core\event\tag_updated',
+        'callback' => '\customfield_keywords\observer::tag_updated',
+    ],
+];
