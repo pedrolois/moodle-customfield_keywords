@@ -25,8 +25,6 @@
 
 namespace customfield_keywords;
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * Keeps the JSON mirror in customfield_data.value in sync with tag_instance.
  *
@@ -65,12 +63,16 @@ class observer {
     public static function tag_updated(\core\event\tag_updated $event): void {
         global $DB;
 
-        $itemids = $DB->get_fieldset_select('tag_instance', 'DISTINCT itemid',
-            'tagid = :tagid AND component = :component AND itemtype = :itemtype', [
+        $itemids = $DB->get_fieldset_select(
+            'tag_instance',
+            'DISTINCT itemid',
+            'tagid = :tagid AND component = :component AND itemtype = :itemtype',
+            [
                 'tagid' => $event->objectid,
                 'component' => data_controller::TAG_COMPONENT,
                 'itemtype' => data_controller::TAG_ITEMTYPE,
-            ]);
+            ]
+        );
         foreach ($itemids as $itemid) {
             data_controller::sync_value_from_tags((int) $itemid);
         }
