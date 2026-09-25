@@ -159,10 +159,22 @@ class data_controller extends \core_customfield\data_controller {
      * same comma-split parsing instance_form_save() applies to a non-array
      * value, so both shapes normalise the same way.
      *
+     * A third shape is an actual array: when the CSV cell is empty (or anything
+     * PHP's empty() treats as empty, such as "0"), tool_uploadcourse falls back to
+     * the default value from its own step-2 form, where this field is rendered as
+     * a 'tags' element that always submits an array (even [] when nothing is
+     * picked). The value is therefore read with to_record() instead of get():
+     * persistent::get() runs clean_param() on it, which throws a coding_exception
+     * ("clean() can not process arrays") for anything that isn't a scalar.
+     *
      * @param \stdClass $instance
      */
     public function instance_form_before_set_data(\stdClass $instance) {
-        $rawvalue = $this->data->get('value');
+        $rawvalue = $this->data->to_record()->value;
+        if (is_array($rawvalue)) {
+            $instance->{$this->get_form_element_name()} = array_values($rawvalue);
+            return;
+        }
         if ($rawvalue !== null && $rawvalue !== '') {
             $keywords = json_decode($rawvalue, true);
             if (!is_array($keywords)) {
@@ -202,6 +214,52 @@ class data_controller extends \core_customfield\data_controller {
         $this->save();
 
         $this->set_keywords((int) $this->get('id'), $this->get_context(), $keywords);
+
+        // set_item_tags() fires a tag_added/tag_removed event per changed instance, and the
+        // observer resyncs the JSON mirror on each of them - i.e. mid-save, from a
+        // partially updated tag list. Resync once more now that all tags are in place.
+        $this->data->set('value', self::sync_value_from_tags((int) $this->get('id')));
+    }
+
+    /**
+     * Rewrites a field instance's JSON mirror in customfield_data.value from its
+     * live tag_instance rows (see class docblock).
+     *
+     * The mirror is only written by this plugin, but the tag_instance rows it
+     * mirrors can also change from outside it - deleting, renaming or combining
+     * a keyword on /tag/manage.php, or untagging an item there - so
+     * \customfield_keywords\observer calls this on every tag event touching this
+     * tag area. Without it the mirror would keep a deleted keyword forever: the
+     * course edit form would still show it (instance_form_before_set_data()
+     * prefers the stored value) and saving that form would recreate the tag.
+     *
+     * @param int $dataid customfield_data.id, which is also the tag_instance itemid
+     * @return string the JSON-encoded keyword list now stored, '[]' if the row doesn't exist
+     */
+    public static function sync_value_from_tags(int $dataid): string {
+        global $DB;
+
+        $keywords = array_values(\core_tag_tag::get_item_tags_array(
+            self::TAG_COMPONENT,
+            self::TAG_ITEMTYPE,
+            $dataid,
+            \core_tag_tag::BOTH_STANDARD_AND_NOT,
+            0,
+            false
+        ));
+        $value = json_encode($keywords);
+
+        // The row may already be gone, e.g. delete() removes the tags (firing tag_removed)
+        // right before deleting its own customfield_data row.
+        if ($DB->record_exists('customfield_data', ['id' => $dataid])) {
+            $DB->update_record('customfield_data', (object) [
+                'id' => $dataid,
+                'value' => $value,
+                'timemodified' => time(),
+            ]);
+        }
+
+        return $value;
     }
 
     /**
