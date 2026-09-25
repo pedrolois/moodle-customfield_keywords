@@ -1,5 +1,7 @@
 # customfield_keywords
 
+[![Moodle Plugin CI](https://github.com/pedrolois/moodle-customfield_keywords/actions/workflows/ci.yml/badge.svg)](https://github.com/pedrolois/moodle-customfield_keywords/actions/workflows/ci.yml)
+
 ## Overview
 
 `customfield_keywords` is a Moodle **custom course field** plugin (`customfield_*`, part of the
@@ -173,7 +175,44 @@ list of keywords, exactly like any other custom field column
 1.0.5 and fixed in 1.0.6 — see Changelog below. An empty cell (or `0`) no longer aborts the
 import: the field falls back to the upload form's "Default course values" instead (fixed in 1.0.7).
 
+## Tests
+
+PHPUnit tests live in `tests/`:
+
+- `data_controller_test.php` — saving keywords (tags + JSON mirror), comma-separated input,
+  replacing and clearing keywords, isolation between two Keywords fields and from core course
+  tags, every value shape `instance_form_before_set_data()` can receive, and `delete()`.
+- `observer_test.php` — deleting, renaming and combining keywords, and untagging one course, are
+  reflected on every course (mirror, `get_value()` and edit form); a deleted keyword is not
+  recreated when the course is saved again; other tag areas are ignored; the 1.0.7 upgrade step
+  rebuilds stale mirrors.
+- `uploadcourse_test.php` — `tool_uploadcourse` imports with real values, and with empty and
+  `0` cells falling back to the step-2 form default.
+
+Run them from the Moodle root once PHPUnit is initialised:
+
+```
+vendor/bin/phpunit --testsuite customfield_keywords_testsuite
+```
+
+Every push and pull request runs [moodle-plugin-ci](https://moodlehq.github.io/moodle-plugin-ci/)
+(`.github/workflows/ci.yml`): PHP lint, Moodle code checker and PHPDoc checker with zero
+warnings, validation, upgrade savepoints, Mustache and Grunt, PHPUnit and Behat, on Moodle 4.5
+with PHP 8.1–8.3 against PostgreSQL and MariaDB.
+
 ## Changelog
+
+### 1.0.8 (2026-09-25)
+
+- **Tests:** PHPUnit coverage for saving, the `tool_uploadcourse` import, the tag observers and
+  the 1.0.7 upgrade step (see Tests above). Checked against the 1.0.6 code, 19 of the 21 tests
+  fail, including the `tool_uploadcourse` ones with the original "clean() can not process
+  arrays" error.
+- **CI:** GitHub Actions workflow running moodle-plugin-ci on every push and pull request.
+- **Build:** `amd/build` regenerated with Moodle 4.5's Grunt toolchain. The committed minified
+  file was out of date and had no source map.
+- **Code style:** passes the Moodle code checker with zero warnings (removed unnecessary
+  `MOODLE_INTERNAL` checks, capitalised inline comments). No functional changes.
 
 ### 1.0.7 (2026-09-25)
 
