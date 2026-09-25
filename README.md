@@ -124,7 +124,7 @@ everywhere, not just here, so this is left as-is.
 
 | Table            | What's stored                                                          |
 |-------------------|-------------------------------------------------------------------------|
-| `customfield_data` | One row per course, `value` = JSON-encoded array of that course's keywords (e.g. `["hola","hola2"]`). Written on every save purely so course backup/restore has something to round-trip (see below) — never read from directly at runtime. |
+| `customfield_data` | One row per course, `value` = JSON-encoded array of that course's keywords (e.g. `["hola","hola2"]`). Written on every save so course backup/restore has something to round-trip (see below), and kept in sync with `tag_instance` by event observers whenever a keyword is deleted, renamed or combined on the Manage tags page (see 1.0.7 in the Changelog). |
 | `tag`              | One row per distinct keyword name, in the `customfield_keywords` tag collection. |
 | `tag_instance`     | Links a keyword (`tagid`) to `itemid = this field instance's own customfield_data.id` (**not** the course id — see "Multiple Keywords fields" below), under `component=customfield_keywords`, `itemtype=course_keyword`. This is the live source of truth: all reads, the course edit form, and autocomplete suggestions come from here, not from `customfield_data`. |
 
@@ -170,9 +170,36 @@ Keyword values can be set through Moodle's course upload CSV (**Site administrat
 Courses > Upload courses**), using a `customfield_<shortname>` column with a comma-separated
 list of keywords, exactly like any other custom field column
 (see [Upload courses](https://docs.moodle.org/en/Upload_courses)). This was broken through
-1.0.5 and fixed in 1.0.6 — see Changelog below.
+1.0.5 and fixed in 1.0.6 — see Changelog below. An empty cell (or `0`) no longer aborts the
+import: the field falls back to the upload form's "Default course values" instead (fixed in 1.0.7).
 
 ## Changelog
+
+### 1.0.7 (2026-09-25)
+
+- **Fix:** `tool_uploadcourse` aborted the whole import with *"Coding error detected, it must be
+  fixed by a programmer: clean() can not process arrays, please use clean_array() instead."*
+  whenever the Keywords column was empty, or held anything PHP's `empty()` treats as empty such as
+  `0`. For those cells `tool_uploadcourse` falls back to the default value from its step-2 form,
+  where this field is rendered as a `tags` element that always submits an array (`[]` when nothing
+  is picked), and sets that array as the placeholder controller's `value`.
+  `instance_form_before_set_data()` then read it back through `persistent::get()`, which runs
+  `clean_param()` on it and throws for any non-scalar. It now reads the value with `to_record()`
+  (no cleaning) and accepts an array as-is.
+- **Fix:** deleting, renaming or combining a keyword under **Site administration > Appearance >
+  Manage tags** (or untagging a course there) left the JSON mirror in `customfield_data.value`
+  untouched. `tag_instance` — and so the catalogue, web services and `export_value()` — did reflect
+  the change, but the course edit form reads the mirror first (see 1.0.6), so it kept showing the
+  deleted or old keyword, and saving the course recreated it. New observers on
+  `\core\event\tag_added`, `\core\event\tag_removed` and `\core\event\tag_updated` rebuild the
+  mirror from `tag_instance` for every affected field instance, so keywords now behave like core
+  tags: remove one and it disappears from every course using it. `instance_form_save()` also
+  rebuilds the mirror once more after `set_item_tags()`, since those same events fire mid-save.
+- **Upgrade step:** rebuilds every existing Keywords mirror from `tag_instance`, cleaning up any
+  left stale by the bug above on sites running 1.0.6 or earlier.
+- Verified against Moodle 4.5 (CLI): `tool_uploadcourse` with empty, `0` and real values, and
+  deleting, renaming and combining keywords, checking the database mirror, `get_value()` and the
+  edit form value after each step.
 
 ### 1.0.6 (2026-08-21)
 
