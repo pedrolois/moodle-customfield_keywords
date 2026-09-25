@@ -26,8 +26,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'customfield_keywords';
-$plugin->version   = 2026082101;
+$plugin->version   = 2026092500;
 $plugin->requires  = 2024100100;
-$plugin->release   = '1.0.6';
+$plugin->release   = '1.0.7';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->supported = [405, 405];
