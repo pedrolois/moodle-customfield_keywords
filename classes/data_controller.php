@@ -25,8 +25,6 @@
 
 namespace customfield_keywords;
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * Data controller for the Keywords custom field type.
  *
@@ -215,7 +213,7 @@ class data_controller extends \core_customfield\data_controller {
 
         $this->set_keywords((int) $this->get('id'), $this->get_context(), $keywords);
 
-        // set_item_tags() fires a tag_added/tag_removed event per changed instance, and the
+        // Core set_item_tags() fires a tag_added/tag_removed event per changed instance, and the
         // observer resyncs the JSON mirror on each of them - i.e. mid-save, from a
         // partially updated tag list. Resync once more now that all tags are in place.
         $this->data->set('value', self::sync_value_from_tags((int) $this->get('id')));
