@@ -200,4 +200,67 @@ final class data_controller_test extends \advanced_testcase {
             'itemid' => $dataid,
         ]));
     }
+
+    /**
+     * core's tag_cron_task::cleanup() joins {<itemtype>} on tag_instance.itemid, so the itemtype
+     * must be a real table: it keeps live keywords and drops the ones whose data row is gone.
+     */
+    public function test_tag_cron_cleanup(): void {
+        global $DB;
+
+        $this->save_keywords($this->course->id, ['kept']);
+        $keptid = $this->get_data($this->course->id)->get('id');
+
+        $othercourse = $this->getDataGenerator()->create_course();
+        $this->save_keywords($othercourse->id, ['orphan']);
+        $orphanid = $this->get_data($othercourse->id)->get('id');
+        // Removed without going through data_controller::delete(), so its tag_instance is left behind.
+        $DB->delete_records('customfield_data', ['id' => $orphanid]);
+
+        (new \core\task\tag_cron_task())->cleanup();
+
+        $this->assertEquals(['kept'], array_values(\core_tag_tag::get_item_tags_array(
+            data_controller::TAG_COMPONENT,
+            data_controller::TAG_ITEMTYPE,
+            $keptid
+        )));
+        $this->assertFalse($DB->record_exists('tag_instance', [
+            'component' => data_controller::TAG_COMPONENT,
+            'itemtype' => data_controller::TAG_ITEMTYPE,
+            'itemid' => $orphanid,
+        ]));
+    }
+
+    /**
+     * Upgrading from 1.0.6 runs the 1.0.7 mirror resync before the 1.0.9 step, so the itemtype
+     * must already be renamed by then or every mirror would be rebuilt as an empty list.
+     */
+    public function test_upgrade_renames_old_itemtype(): void {
+        global $CFG, $DB;
+        require_once($CFG->libdir . '/upgradelib.php');
+        require_once($CFG->dirroot . '/customfield/field/keywords/db/upgrade.php');
+
+        $this->save_keywords($this->course->id, ['legacy']);
+        $dataid = $this->get_data($this->course->id)->get('id');
+        $areaid = $DB->get_field('tag_area', 'id', [
+            'component' => data_controller::TAG_COMPONENT,
+            'itemtype' => data_controller::TAG_ITEMTYPE,
+        ]);
+        // Put the rows back as a site on 1.0.8 or earlier has them.
+        $old = ['component' => data_controller::TAG_COMPONENT, 'itemtype' => 'course_keyword'];
+        $DB->set_field('tag_area', 'itemtype', 'course_keyword', ['id' => $areaid]);
+        $DB->set_field('tag_instance', 'itemtype', 'course_keyword', ['component' => data_controller::TAG_COMPONENT]);
+
+        set_config('version', 2026082101, 'customfield_keywords');
+        $this->assertTrue(xmldb_customfield_keywords_upgrade(2026082101));
+
+        $this->assertFalse($DB->record_exists('tag_area', $old));
+        $this->assertFalse($DB->record_exists('tag_instance', $old));
+        $this->assertEquals($areaid, $DB->get_field('tag_area', 'id', [
+            'component' => data_controller::TAG_COMPONENT,
+            'itemtype' => data_controller::TAG_ITEMTYPE,
+        ]));
+        $this->assertEquals('["legacy"]', $DB->get_field('customfield_data', 'value', ['id' => $dataid]));
+        $this->assertEquals(['legacy'], $this->get_form_value($this->get_data($this->course->id)));
+    }
 }
