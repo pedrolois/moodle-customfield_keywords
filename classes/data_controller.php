@@ -71,8 +71,15 @@ class data_controller extends \core_customfield\data_controller {
     /** @var string component used to namespace tag_instance rows for this field type */
     const TAG_COMPONENT = 'customfield_keywords';
 
-    /** @var string itemtype used to namespace tag_instance rows for this field type */
-    const TAG_ITEMTYPE = 'course_keyword';
+    /**
+     * @var string itemtype used to namespace tag_instance rows for this field type.
+     *
+     * Must be the name of the table the tag_instance itemid points to: core's
+     * tag_cron_task::cleanup() LEFT JOINs {<itemtype>} on itemid to delete orphaned
+     * instances, so any other value makes that scheduled task fail with
+     * "Table ... doesn't exist" (it was 'course_keyword' before 1.0.9).
+     */
+    const TAG_ITEMTYPE = 'customfield_data';
 
     /**
      * Return the name of the field where the information is stored.

@@ -25,7 +25,7 @@
 
 /**
  * Returns courses tagged with a given keyword, for the tag area
- * (component=customfield_keywords, itemtype=course_keyword).
+ * (component=customfield_keywords, itemtype=customfield_data).
  *
  * core_course_category::search_courses()/search_courses_count() and
  * course renderer's tagged_courses(), which core's own
@@ -68,8 +68,8 @@ function customfield_keywords_get_tagged_courses($tag, $exclusivemode = false, $
     $params = [
         'contextcourse' => CONTEXT_COURSE,
         'tagid' => $tag->id,
-        'itemtype' => 'course_keyword',
-        'component' => 'customfield_keywords',
+        'itemtype' => \customfield_keywords\data_controller::TAG_ITEMTYPE,
+        'component' => \customfield_keywords\data_controller::TAG_COMPONENT,
         'siteid' => SITEID,
     ];
 
@@ -108,8 +108,8 @@ function customfield_keywords_get_tagged_courses($tag, $exclusivemode = false, $
 
     return new core_tag\output\tagindex(
         $tag,
-        'customfield_keywords',
-        'course_keyword',
+        \customfield_keywords\data_controller::TAG_COMPONENT,
+        \customfield_keywords\data_controller::TAG_ITEMTYPE,
         $content,
         $exclusivemode,
         $fromctx,
