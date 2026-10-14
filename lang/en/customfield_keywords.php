@@ -28,5 +28,5 @@ defined('MOODLE_INTERNAL') || die();
 $string['managekeywords'] = 'Manage keywords';
 $string['pluginname'] = 'Keywords';
 $string['privacy:metadata'] = 'The Keywords field type plugin does not store any personal data itself; it stores tag instances using the core tagging subsystem, which is documented separately.';
-$string['tagarea_course_keyword'] = 'Course keywords';
+$string['tagarea_customfield_data'] = 'Course keywords';
 $string['tagcollection_customfield_keywords'] = 'Course keywords';
