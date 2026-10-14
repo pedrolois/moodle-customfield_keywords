@@ -47,7 +47,7 @@ admin-configurable course custom field.
 - **`classes/data_controller.php`** — the core of the plugin. `core_customfield`'s
   `{customfield_data}` table only allows **one value per (field, course)**, so it cannot hold a
   genuinely multi-value field by itself. This controller:
-  - injects Moodle's native `tags` form element (`itemtype=course_keyword`,
+  - injects Moodle's native `tags` form element (`itemtype=customfield_data`,
     `component=customfield_keywords`) into the course edit form — this is what gives the
     multi-value input and ajax autocomplete for free;
   - on save, calls `core_tag_tag::set_item_tags()` to persist the actual keyword list in
@@ -60,7 +60,7 @@ admin-configurable course custom field.
   - on load/export/delete, reads/removes from `{tag_instance}` the same way — `{tag_instance}` is
     always the live source of truth for reads and autocomplete, never `{customfield_data}`.
 - **`db/tag.php`** — registers the tag area (`component=customfield_keywords`,
-  `itemtype=course_keyword`) under its own tag collection, so keyword suggestions never mix
+  `itemtype=customfield_data`) under its own tag collection, so keyword suggestions never mix
   with the standard course "Tags" field or any other tag area on the site.
 - **`lib.php`** — the tag area callback (`customfield_keywords_get_tagged_courses`), used by
   `/tag/index.php` to list courses tagged with a given keyword. It does **not** delegate to
@@ -83,7 +83,7 @@ second, separately-named field) — each behaves independently and doesn't share
 with the others.
 
 All fields of this type share the same `component`/`itemtype` (`customfield_keywords`/
-`course_keyword`), since that's fixed per plugin type, not per field instance — Moodle only
+`customfield_data`), since that's fixed per plugin type, not per field instance — Moodle only
 reads `db/tag.php` once, at install/upgrade time, so a dynamic itemtype per field id can't be
 registered there. `set_item_tags()` is destructive per `component+itemtype+itemid+context`, so
 if two Keywords fields both used the course id as `itemid`, saving one field would silently wipe
@@ -128,7 +128,7 @@ everywhere, not just here, so this is left as-is.
 |-------------------|-------------------------------------------------------------------------|
 | `customfield_data` | One row per course, `value` = JSON-encoded array of that course's keywords (e.g. `["hola","hola2"]`). Written on every save so course backup/restore has something to round-trip (see below), and kept in sync with `tag_instance` by event observers whenever a keyword is deleted, renamed or combined on the Manage tags page (see 1.0.7 in the Changelog). |
 | `tag`              | One row per distinct keyword name, in the `customfield_keywords` tag collection. |
-| `tag_instance`     | Links a keyword (`tagid`) to `itemid = this field instance's own customfield_data.id` (**not** the course id — see "Multiple Keywords fields" below), under `component=customfield_keywords`, `itemtype=course_keyword`. This is the live source of truth: all reads, the course edit form, and autocomplete suggestions come from here, not from `customfield_data`. |
+| `tag_instance`     | Links a keyword (`tagid`) to `itemid = this field instance's own customfield_data.id` (**not** the course id — see "Multiple Keywords fields" below), under `component=customfield_keywords`, `itemtype=customfield_data`. This is the live source of truth: all reads, the course edit form, and autocomplete suggestions come from here, not from `customfield_data`. |
 
 ## Installation
 
@@ -145,7 +145,7 @@ against the database and the UI).
 
 This needed explicit handling: Moodle's course backup only copies `tag_instance` rows for the
 native `component=core, itemtype=course` tag area, never third-party tag areas like this one's
-(`component=customfield_keywords, itemtype=course_keyword`). It also turns out a
+(`component=customfield_keywords, itemtype=customfield_data`). It also turns out a
 `data_controller` has **no way to add its own XML nodes** to the backup/restore file — the course
 backup XML's `<customfield>` element structure, and the set of restore paths Moodle parses it
 with, are both fixed by core (`backup_course_structure_step` /
@@ -181,7 +181,9 @@ PHPUnit tests live in `tests/`:
 
 - `data_controller_test.php` — saving keywords (tags + JSON mirror), comma-separated input,
   replacing and clearing keywords, isolation between two Keywords fields and from core course
-  tags, every value shape `instance_form_before_set_data()` can receive, and `delete()`.
+  tags, every value shape `instance_form_before_set_data()` can receive, `delete()`, core's
+  `tag_cron_task` cleanup (keeps live keywords, drops orphaned ones), and the 1.0.9 itemtype
+  rename when upgrading from 1.0.6.
 - `observer_test.php` — deleting, renaming and combining keywords, and untagging one course, are
   reflected on every course (mirror, `get_value()` and edit form); a deleted keyword is not
   recreated when the course is saved again; other tag areas are ignored; the 1.0.7 upgrade step
@@ -201,6 +203,17 @@ warnings, validation, upgrade savepoints, Mustache and Grunt, PHPUnit and Behat,
 with PHP 8.1–8.3 against PostgreSQL and MariaDB.
 
 ## Changelog
+
+### 1.0.9 (2026-10-14)
+
+- **Fix:** the "Background processing for tags" scheduled task (`core\task\tag_cron_task`)
+  failed on every run with `Table 'mdl_course_keyword' doesn't exist`, flagged as "Tasks max
+  fail delay" on the System status page. Its cleanup LEFT JOINs `{<itemtype>}` on
+  `tag_instance.itemid`, so the itemtype must be a real table. It is now `customfield_data`,
+  which is what the itemid already pointed to, so the cleanup also removes keywords left behind
+  by deleted field data.
+- **Upgrade:** renames the existing `tag_area` and `tag_instance` rows in place, so the tag area
+  keeps its id, tag collection and enabled flag and no keyword is lost.
 
 ### 1.0.8 (2026-09-25)
 

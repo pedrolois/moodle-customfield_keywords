@@ -21,6 +21,10 @@
  * standard course "Tags" field (component=core, itemtype=course) or any other
  * tag area on the site.
  *
+ * The itemtype must be the table the tag_instance itemid points to (here
+ * customfield_data.id, see data_controller), because core's tag_cron_task
+ * joins {<itemtype>} to clean up orphaned instances.
+ *
  * @package   customfield_keywords
  * @author    Pedro Luis Garcia Leiva
  * @copyright 2026 Pedro Lois {@link https://github.com/pedrolois}
@@ -31,7 +35,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $tagareas = [
     [
-        'itemtype' => 'course_keyword',
+        'itemtype' => 'customfield_data',
         'component' => 'customfield_keywords',
         'collection' => 'customfield_keywords',
         'callback' => 'customfield_keywords_get_tagged_courses',

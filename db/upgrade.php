@@ -36,6 +36,9 @@ function xmldb_customfield_keywords_upgrade($oldversion) {
         // Before 1.0.7 nothing kept the JSON mirror in customfield_data.value in sync when
         // keywords were deleted, renamed or combined on /tag/manage.php, so it may still list
         // keywords that no longer exist. Rebuild every mirror from its live tag_instance rows.
+        // The resync reads through data_controller::TAG_ITEMTYPE, which is 'customfield_data'
+        // since 1.0.9, so rename the rows first or every mirror would be rebuilt as empty.
+        customfield_keywords_rename_tag_itemtype();
         $dataids = $DB->get_fieldset_sql(
             "SELECT d.id
                FROM {customfield_data} d
@@ -50,5 +53,36 @@ function xmldb_customfield_keywords_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026092500, 'customfield', 'keywords');
     }
 
+    if ($oldversion < 2026101400) {
+        // Already done by the step above when upgrading from before 1.0.7; it is idempotent.
+        customfield_keywords_rename_tag_itemtype();
+        upgrade_plugin_savepoint(true, 2026101400, 'customfield', 'keywords');
+    }
+
     return true;
+}
+
+/**
+ * Renames this plugin's tag itemtype from 'course_keyword' to 'customfield_data'.
+ *
+ * core's tag_cron_task::cleanup() LEFT JOINs {<itemtype>} on tag_instance.itemid to find
+ * orphaned instances, so 'course_keyword' (no such table) made the "Background processing
+ * for tags" scheduled task fail on every run. The itemid already is customfield_data.id.
+ *
+ * The tag_area row is renamed in place rather than left for
+ * core_tag_area::reset_definitions_for_component() to recreate, so the area keeps its id,
+ * tag collection and enabled flag.
+ */
+function customfield_keywords_rename_tag_itemtype(): void {
+    global $DB;
+
+    $old = ['component' => 'customfield_keywords', 'itemtype' => 'course_keyword'];
+    $new = ['component' => 'customfield_keywords', 'itemtype' => 'customfield_data'];
+
+    if ($DB->record_exists('tag_area', $old) && !$DB->record_exists('tag_area', $new)) {
+        $DB->set_field('tag_area', 'itemtype', $new['itemtype'], $old);
+    }
+    $DB->set_field('tag_instance', 'itemtype', $new['itemtype'], $old);
+
+    cache::make('core', 'tags')->delete_many(['tag_area', 'tag_coll']);
 }
