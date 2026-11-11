@@ -54,13 +54,13 @@ final class uploadcourse_test extends \advanced_testcase {
      * Run a one-row update the way the Upload courses page does.
      *
      * The page always passes the step-2 "Default course values" form's value for every custom
-     * field as a default; for a Keywords field that form element is a 'tags' element, so the
-     * default is always an array ([] when nothing was picked).
+     * field as a default; for a Keywords field that form element is a text box holding a
+     * comma-separated list ('' when left empty).
      *
      * @param string $cell the CSV cell for the Keywords column
-     * @param array $default the step-2 form default for the Keywords field
+     * @param string $default the step-2 form default for the Keywords field
      */
-    protected function upload(string $cell, array $default = []): void {
+    protected function upload(string $cell, string $default = ''): void {
         $uploader = new tool_uploadcourse_course(
             tool_uploadcourse_processor::MODE_UPDATE_ONLY,
             tool_uploadcourse_processor::UPDATE_ALL_WITH_DATA_ONLY,
@@ -89,7 +89,7 @@ final class uploadcourse_test extends \advanced_testcase {
     }
 
     /**
-     * An empty cell, or one PHP's empty() treats as empty, falls back to the step-2 array default.
+     * An empty cell, or one PHP's empty() treats as empty, falls back to the step-2 default.
      * Before 1.0.7 this aborted the whole import with "clean() can not process arrays".
      *
      * @dataProvider empty_cell_provider
@@ -99,7 +99,7 @@ final class uploadcourse_test extends \advanced_testcase {
         $this->upload($cell);
         $this->assertEquals([], $this->get_keywords());
 
-        $this->upload($cell, ['Default one', 'Default two']);
+        $this->upload($cell, 'Default one, Default two');
         $this->assertEquals(['Default one', 'Default two'], $this->get_keywords());
     }
 
@@ -126,7 +126,7 @@ final class uploadcourse_test extends \advanced_testcase {
         $processor = new tool_uploadcourse_processor($cir, [
             'mode' => tool_uploadcourse_processor::MODE_UPDATE_ONLY,
             'updatemode' => tool_uploadcourse_processor::UPDATE_ALL_WITH_DATA_ONLY,
-        ], ['customfield_kw' => []]);
+        ], ['customfield_kw' => '']);
 
         $tracker = new \tool_uploadcourse_tracker(\tool_uploadcourse_tracker::NO_OUTPUT);
         $processor->execute($tracker);
