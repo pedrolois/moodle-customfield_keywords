@@ -97,7 +97,8 @@ final class data_controller_test extends \advanced_testcase {
             $DB->get_field('customfield_data', 'value', ['id' => $data->get('id')])
         );
         $this->assertEquals(['AI Governance', 'Data'], json_decode($data->get_value(), true));
-        $this->assertEquals('AI Governance, Data', $data->export_value());
+        $this->assertStringContainsString('>AI Governance</a>, ', $data->export_value());
+        $this->assertStringContainsString('>Data</a>', $data->export_value());
         $this->assertEquals(['AI Governance', 'Data'], $this->get_form_value($data));
 
         // The keywords are marked standard so they are suggested on every course.

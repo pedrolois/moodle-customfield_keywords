@@ -373,15 +373,19 @@ class data_controller extends \core_customfield\data_controller {
         }
         /** @var field_controller $field */
         $field = $this->get_field();
+        // Tag names are stored already escaped, so they are displayed with format_string() and not s().
+        $context = \core\context\system::instance();
+        $names = array_map(fn(string $keyword) => format_string($keyword, true, ['context' => $context]), $keywords);
         if (!$field->display_as_links()) {
-            return s(implode(', ', $keywords));
+            return implode(', ', $names);
         }
         $tagcollid = \core_tag_area::get_collection(self::TAG_COMPONENT, self::TAG_ITEMTYPE);
         $links = array_map(
-            fn(string $keyword) => \html_writer::link(\core_tag_tag::make_url($tagcollid, $keyword), s($keyword), [
+            fn(string $keyword, string $name) => \html_writer::link(\core_tag_tag::make_url($tagcollid, $keyword), $name, [
                 'class' => 'customfield_keywords-keyword',
             ]),
-            $keywords
+            $keywords,
+            $names
         );
         return implode(', ', $links);
     }

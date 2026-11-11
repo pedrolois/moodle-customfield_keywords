@@ -65,7 +65,6 @@ final class field_settings_test extends \advanced_testcase {
         $this->fail("No data for field {$shortname}");
     }
 
-
     /**
      * Keywords are shown as escaped links to the courses with the same keyword, or as plain text.
      *
@@ -90,7 +89,6 @@ final class field_settings_test extends \advanced_testcase {
         $this->assertNull($this->get_data($empty->id, 'topics')->export_value());
     }
 
-
     /**
      * More keywords than the field allows are refused; a negative limit is refused in the field settings.
      *
@@ -112,7 +110,6 @@ final class field_settings_test extends \advanced_testcase {
         $errors = $field->config_form_validation(['configdata' => ['maxkeywords' => -1]]);
         $this->assertArrayHasKey('configdata[maxkeywords]', $errors);
     }
-
 
     /**
      * Keywords survive a course backup and restore into a new course.
@@ -176,7 +173,7 @@ final class field_settings_test extends \advanced_testcase {
         $tagcollid = \core_tag_area::get_collection(data_controller::TAG_COMPONENT, data_controller::TAG_ITEMTYPE);
         $tag = \core_tag_tag::get_by_name($tagcollid, 'Leadership', '*');
         $index = customfield_keywords_get_tagged_courses($tag, true);
-        $html = $index->export_for_template($GLOBALS['OUTPUT'])['content'];
+        $html = $index->export_for_template($GLOBALS['OUTPUT'])->content;
         $this->assertStringContainsString('Leading teams', $html);
         $this->assertStringNotContainsString('Budgets', $html);
     }

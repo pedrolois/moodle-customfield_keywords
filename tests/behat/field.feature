@@ -1,4 +1,4 @@
-@core_customfield @customfield_keywords @javascript
+@customfield @customfield_keywords @javascript
 Feature: Keywords course custom field
   In order to classify courses with free keywords
   As a manager and a teacher
@@ -17,17 +17,9 @@ Feature: Keywords course custom field
     And the following "course enrolments" exist:
       | user     | course | role           |
       | teacher1 | C1     | editingteacher |
-    And I log in as "admin"
-    And I navigate to "Courses > Default settings > Course custom fields" in site administration
-    And I click on "Add field" "link"
-    And I click on "Keywords" "link"
-    And I set the following fields to these values:
-      | Name                       | Topics   |
-      | Short name                 | topics   |
-      | Visible to                 | Everyone |
-      | Maximum number of keywords | 2        |
-    And I click on "Save changes" "button" in the "Adding a new Keywords" "dialogue"
-    And I log out
+    And the following "custom fields" exist:
+      | name   | category          | type     | shortname | configdata                             |
+      | Topics | Category for test | keywords | topics    | {"visibility":"2","maxkeywords":"2"} |
 
   Scenario: Keywords are saved and shown as links to the courses with the same keyword
     Given I log in as "teacher1"
