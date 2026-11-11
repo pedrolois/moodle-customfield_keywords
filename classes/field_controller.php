@@ -19,9 +19,8 @@ namespace customfield_keywords;
 /**
  * Field controller for the Keywords custom field type.
  *
- * A keyword has no per-field configuration beyond what core_customfield
- * already provides (name, description, required, visibility): the actual
- * values are free-text tags, not admin-defined options.
+ * Keyword values are free-text tags, not admin-defined options. Each field can limit how many keywords a course
+ * may have, and choose whether keywords are shown as links to the list of courses with the same keyword.
  *
  * @package customfield_keywords
  * @author    Pedro Luis Garcia Leiva
@@ -33,10 +32,57 @@ class field_controller extends \core_customfield\field_controller {
     const TYPE = 'keywords';
 
     /**
-     * No type-specific configuration is needed for keywords.
+     * Settings of a Keywords field: the maximum number of keywords and how they are shown.
      *
      * @param \MoodleQuickForm $mform
      */
     public function config_form_definition(\MoodleQuickForm $mform) {
+        $mform->addElement('header', 'header_specificsettings', get_string('specificsettings', 'customfield_keywords'));
+        $mform->setExpanded('header_specificsettings', true);
+
+        $mform->addElement('text', 'configdata[maxkeywords]', get_string('maxkeywords', 'customfield_keywords'), ['size' => 6]);
+        $mform->setType('configdata[maxkeywords]', PARAM_INT);
+        $mform->setDefault('configdata[maxkeywords]', 0);
+        $mform->addHelpButton('configdata[maxkeywords]', 'maxkeywords', 'customfield_keywords');
+
+        $mform->addElement('selectyesno', 'configdata[displayaslinks]', get_string('displayaslinks', 'customfield_keywords'));
+        $mform->setType('configdata[displayaslinks]', PARAM_BOOL);
+        $mform->setDefault('configdata[displayaslinks]', 1);
+        $mform->addHelpButton('configdata[displayaslinks]', 'displayaslinks', 'customfield_keywords');
+    }
+
+    /**
+     * The maximum number of keywords cannot be negative.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array
+     */
+    public function config_form_validation(array $data, $files = []): array {
+        $errors = parent::config_form_validation($data, $files);
+        if ((int) ($data['configdata']['maxkeywords'] ?? 0) < 0) {
+            $errors['configdata[maxkeywords]'] = get_string('maxkeywordsinvalid', 'customfield_keywords');
+        }
+        return $errors;
+    }
+
+    /**
+     * Maximum number of keywords a course may have, 0 for no limit.
+     *
+     * @return int
+     */
+    public function get_max_keywords(): int {
+        return max(0, (int) $this->get_configdata_property('maxkeywords'));
+    }
+
+    /**
+     * Whether keywords are shown as links to the courses with the same keyword. Fields created before this
+     * setting existed show links.
+     *
+     * @return bool
+     */
+    public function display_as_links(): bool {
+        $value = $this->get_configdata_property('displayaslinks');
+        return $value === null || (bool) $value;
     }
 }
