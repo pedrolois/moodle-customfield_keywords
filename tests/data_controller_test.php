@@ -180,8 +180,7 @@ final class data_controller_test extends \advanced_testcase {
         return [
             'comma-separated string from the CSV' => ['alpha, beta', ['alpha', 'beta']],
             'JSON written by instance_form_save()' => ['["alpha","beta"]', ['alpha', 'beta']],
-            'empty array default from the tags element' => [[], []],
-            'array default from the tags element' => [['x' => 'alpha', 'y' => 'beta'], ['alpha', 'beta']],
+            'empty default from the upload form' => ['', []],
         ];
     }
 

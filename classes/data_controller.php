@@ -116,6 +116,14 @@ class data_controller extends \core_customfield\data_controller {
         global $PAGE;
 
         $elementname = $this->get_form_element_name();
+        if ($mform->_formName === 'tool_uploadcourse_step2_form') {
+            // The "Default course values" step of the course upload passes this element's value to
+            // customfield_data.value, which only accepts a string from Moodle 5.0 (an array from a 'tags'
+            // element aborts the whole import). A comma-separated list is what a CSV cell holds anyway.
+            $mform->addElement('text', $elementname, $this->get_field()->get_formatted_name(), ['size' => 50]);
+            $mform->setType($elementname, PARAM_TEXT);
+            return;
+        }
         $mform->addElement('tags', $elementname, $this->get_field()->get_formatted_name(), [
             'itemtype' => self::TAG_ITEMTYPE,
             'component' => self::TAG_COMPONENT,
