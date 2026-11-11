@@ -17,6 +17,8 @@ Feature: Keywords course custom field
     And the following "course enrolments" exist:
       | user     | course | role           |
       | teacher1 | C1     | editingteacher |
+    And the following config values are set as admin:
+      | defaulthomepage | 0 |
     And the following "custom fields" exist:
       | name   | category          | type     | shortname | configdata                             |
       | Topics | Category for test | keywords | topics    | {"visibility":"2","maxkeywords":"2"} |
