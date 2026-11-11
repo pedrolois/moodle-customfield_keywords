@@ -25,6 +25,7 @@ Feature: Keywords course custom field
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I navigate to "Settings" in current page administration
+    And I expand all fieldsets
     And I set the field "Topics" to "Leadership, Finance"
     And I press "Save and display"
     When I am on site homepage
@@ -38,6 +39,7 @@ Feature: Keywords course custom field
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I navigate to "Settings" in current page administration
+    And I expand all fieldsets
     When I set the field "Topics" to "Leadership, Finance, Ethics"
     And I press "Save and display"
     Then I should see "Enter at most 2 keywords."
