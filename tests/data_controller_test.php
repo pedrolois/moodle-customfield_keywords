@@ -97,7 +97,8 @@ final class data_controller_test extends \advanced_testcase {
             $DB->get_field('customfield_data', 'value', ['id' => $data->get('id')])
         );
         $this->assertEquals(['AI Governance', 'Data'], json_decode($data->get_value(), true));
-        $this->assertEquals('AI Governance, Data', $data->export_value());
+        $this->assertStringContainsString('>AI Governance</a>, ', $data->export_value());
+        $this->assertStringContainsString('>Data</a>', $data->export_value());
         $this->assertEquals(['AI Governance', 'Data'], $this->get_form_value($data));
 
         // The keywords are marked standard so they are suggested on every course.
@@ -179,8 +180,7 @@ final class data_controller_test extends \advanced_testcase {
         return [
             'comma-separated string from the CSV' => ['alpha, beta', ['alpha', 'beta']],
             'JSON written by instance_form_save()' => ['["alpha","beta"]', ['alpha', 'beta']],
-            'empty array default from the tags element' => [[], []],
-            'array default from the tags element' => [['x' => 'alpha', 'y' => 'beta'], ['alpha', 'beta']],
+            'empty default from the upload form' => ['', []],
         ];
     }
 

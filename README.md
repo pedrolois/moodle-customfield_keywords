@@ -39,6 +39,15 @@ blogs, questions, etc). This plugin registers its **own tag area and its own tag
 never from unrelated tags elsewhere on the site — while still living alongside every other
 admin-configurable course custom field.
 
+## Field settings
+
+Besides the usual custom field options (name, description, required, visibility…), a Keywords field has:
+
+| Setting | What it does |
+|---|---|
+| **Maximum number of keywords** | How many keywords a course may have in this field. `0` means no limit. Checked when the course is saved. |
+| **Show keywords as links** | Where course custom fields are displayed (course listings, catalogues), each keyword links to the list of courses with the same keyword. On by default. |
+
 ## How it works
 
 - **`classes/field_controller.php`** — the field definition (admin side). No extra
@@ -130,6 +139,10 @@ everywhere, not just here, so this is left as-is.
 | `tag`              | One row per distinct keyword name, in the `customfield_keywords` tag collection. |
 | `tag_instance`     | Links a keyword (`tagid`) to `itemid = this field instance's own customfield_data.id` (**not** the course id — see "Multiple Keywords fields" below), under `component=customfield_keywords`, `itemtype=customfield_data`. This is the live source of truth: all reads, the course edit form, and autocomplete suggestions come from here, not from `customfield_data`. |
 
+## Requirements
+
+- Moodle 4.5 to 5.3.
+
 ## Installation
 
 This plugin lives at `customfield/field/keywords` and is installed the same way as any other
@@ -203,6 +216,15 @@ warnings, validation, upgrade savepoints, Mustache and Grunt, PHPUnit and Behat,
 with PHP 8.1–8.3 against PostgreSQL and MariaDB.
 
 ## Changelog
+
+### 1.1.0 (2026-11-11)
+
+- Supports Moodle 4.5 to 5.3.
+- Keywords are shown as links to the list of courses with the same keyword (new field setting, on by default).
+- New field setting: maximum number of keywords per course, checked when the course is saved.
+- Keyword names are escaped when displayed.
+- Course upload (CSV): the Keywords default value is a comma-separated text box, so the import no longer stops on Moodle 5.x when the column is empty.
+- Tests for the new settings, backup and restore and the tag page, Behat scenarios, and continuous integration on Moodle 4.5 and 5.3.
 
 ### 1.0.9 (2026-10-14)
 

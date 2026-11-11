@@ -25,8 +25,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['displayaslinks'] = 'Show keywords as links';
+$string['displayaslinks_help'] = 'Where course custom fields are displayed (for example in course listings), each keyword links to the list of courses with the same keyword.';
 $string['managekeywords'] = 'Manage keywords';
+$string['maxkeywords'] = 'Maximum number of keywords';
+$string['maxkeywords_help'] = 'How many keywords a course may have in this field. 0 means no limit.';
+$string['maxkeywordsinvalid'] = 'The maximum number of keywords cannot be negative.';
 $string['pluginname'] = 'Keywords';
 $string['privacy:metadata'] = 'The Keywords field type plugin does not store any personal data itself; it stores tag instances using the core tagging subsystem, which is documented separately.';
+$string['specificsettings'] = 'Keywords field settings';
 $string['tagarea_customfield_data'] = 'Course keywords';
 $string['tagcollection_customfield_keywords'] = 'Course keywords';
+$string['toomanykeywords'] = 'Enter at most {$a} keywords.';

@@ -116,6 +116,14 @@ class data_controller extends \core_customfield\data_controller {
         global $PAGE;
 
         $elementname = $this->get_form_element_name();
+        if ($mform->_formName === 'tool_uploadcourse_step2_form') {
+            // The "Default course values" step of the course upload passes this element's value to
+            // customfield_data.value, which only accepts a string from Moodle 5.0 (an array from a 'tags'
+            // element aborts the whole import). A comma-separated list is what a CSV cell holds anyway.
+            $mform->addElement('text', $elementname, $this->get_field()->get_formatted_name(), ['size' => 50]);
+            $mform->setType($elementname, PARAM_TEXT);
+            return;
+        }
         $mform->addElement('tags', $elementname, $this->get_field()->get_formatted_name(), [
             'itemtype' => self::TAG_ITEMTYPE,
             'component' => self::TAG_COMPONENT,
@@ -189,6 +197,26 @@ class data_controller extends \core_customfield\data_controller {
             return;
         }
         $instance->{$this->get_form_element_name()} = $this->get_keywords((int) $this->get('id'));
+    }
+
+    /**
+     * Refuses more keywords than the field allows.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array
+     */
+    public function instance_form_validation(array $data, array $files): array {
+        $errors = parent::instance_form_validation($data, $files);
+        $elementname = $this->get_form_element_name();
+        /** @var field_controller $field */
+        $field = $this->get_field();
+        $max = $field->get_max_keywords();
+        $keywords = $data[$elementname] ?? [];
+        if ($max && is_array($keywords) && count(array_filter($keywords, 'strlen')) > $max) {
+            $errors[$elementname] = get_string('toomanykeywords', 'customfield_keywords', $max);
+        }
+        return $errors;
     }
 
     /**
@@ -341,16 +369,33 @@ class data_controller extends \core_customfield\data_controller {
     }
 
     /**
-     * Returns value in a human-readable format.
+     * Returns value in a human-readable format: the keywords, each one a link to the list of courses with the same
+     * keyword (unless the field is set to plain text).
      *
-     * @return string|null comma-separated keyword list, or null if empty
+     * @return string|null HTML, or null if empty
      */
     public function export_value() {
         $keywords = $this->get_keywords((int) $this->get('id'));
         if (empty($keywords)) {
             return null;
         }
-        return implode(', ', $keywords);
+        /** @var field_controller $field */
+        $field = $this->get_field();
+        // Tag names are stored already escaped, so they are displayed with format_string() and not s().
+        $context = \core\context\system::instance();
+        $names = array_map(fn(string $keyword) => format_string($keyword, true, ['context' => $context]), $keywords);
+        if (!$field->display_as_links()) {
+            return implode(', ', $names);
+        }
+        $tagcollid = \core_tag_area::get_collection(self::TAG_COMPONENT, self::TAG_ITEMTYPE);
+        $links = array_map(
+            fn(string $keyword, string $name) => \html_writer::link(\core_tag_tag::make_url($tagcollid, $keyword), $name, [
+                'class' => 'customfield_keywords-keyword',
+            ]),
+            $keywords,
+            $names
+        );
+        return implode(', ', $links);
     }
 
     /**
