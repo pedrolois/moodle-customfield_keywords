@@ -26,8 +26,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'customfield_keywords';
-$plugin->version   = 2026101400;
-$plugin->requires  = 2024100100;
-$plugin->release   = '1.0.9';
+$plugin->version   = 2026111100;
+$plugin->requires  = 2024100700; // Moodle 4.5.
+$plugin->release   = '1.1.0';
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->supported = [405, 405];
+$plugin->supported = [405, 503];

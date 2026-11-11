@@ -192,6 +192,26 @@ class data_controller extends \core_customfield\data_controller {
     }
 
     /**
+     * Refuses more keywords than the field allows.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array
+     */
+    public function instance_form_validation(array $data, array $files): array {
+        $errors = parent::instance_form_validation($data, $files);
+        $elementname = $this->get_form_element_name();
+        /** @var field_controller $field */
+        $field = $this->get_field();
+        $max = $field->get_max_keywords();
+        $keywords = $data[$elementname] ?? [];
+        if ($max && is_array($keywords) && count(array_filter($keywords, 'strlen')) > $max) {
+            $errors[$elementname] = get_string('toomanykeywords', 'customfield_keywords', $max);
+        }
+        return $errors;
+    }
+
+    /**
      * Saves the data coming from the form.
      *
      * Writes the submitted keyword list to core_tag_tag under this field's
@@ -341,16 +361,29 @@ class data_controller extends \core_customfield\data_controller {
     }
 
     /**
-     * Returns value in a human-readable format.
+     * Returns value in a human-readable format: the keywords, each one a link to the list of courses with the same
+     * keyword (unless the field is set to plain text).
      *
-     * @return string|null comma-separated keyword list, or null if empty
+     * @return string|null HTML, or null if empty
      */
     public function export_value() {
         $keywords = $this->get_keywords((int) $this->get('id'));
         if (empty($keywords)) {
             return null;
         }
-        return implode(', ', $keywords);
+        /** @var field_controller $field */
+        $field = $this->get_field();
+        if (!$field->display_as_links()) {
+            return s(implode(', ', $keywords));
+        }
+        $tagcollid = \core_tag_area::get_collection(self::TAG_COMPONENT, self::TAG_ITEMTYPE);
+        $links = array_map(
+            fn(string $keyword) => \html_writer::link(\core_tag_tag::make_url($tagcollid, $keyword), s($keyword), [
+                'class' => 'customfield_keywords-keyword',
+            ]),
+            $keywords
+        );
+        return implode(', ', $links);
     }
 
     /**
