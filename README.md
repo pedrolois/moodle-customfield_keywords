@@ -223,6 +223,7 @@ with PHP 8.1–8.3 against PostgreSQL and MariaDB.
 - Keywords are shown as links to the list of courses with the same keyword (new field setting, on by default).
 - New field setting: maximum number of keywords per course, checked when the course is saved.
 - Keyword names are escaped when displayed.
+- Course upload (CSV): the Keywords default value is a comma-separated text box, so the import no longer stops on Moodle 5.x when the column is empty.
 - Tests for the new settings, backup and restore and the tag page, Behat scenarios, and continuous integration on Moodle 4.5 and 5.3.
 
 ### 1.0.9 (2026-10-14)
