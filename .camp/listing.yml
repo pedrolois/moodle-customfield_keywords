@@ -1,0 +1,22 @@
+# camp listing manifest (https://github.com/camp-registry/camp-docs/blob/main/AUTHORS.md).
+# Ingested and hash-pinned by camp at each tagged release.
+
+name: Keywords custom course field
+summary: Course custom field that stores free-text keywords using Moodle's core tag system and autocomplete.
+description: |
+  Adds a "Keywords" field type for course custom fields. It behaves like
+  Moodle's course Tags field: teachers enter several free-text values, and
+  values already used on other courses are suggested through the standard tag
+  autocomplete widget.
+
+  - Uses core_tag for storage, search and tag management (standardise,
+    combine, rename); it adds no tables of its own
+  - Own tag area and tag collection, so suggestions only come from other
+    courses' keywords
+  - Configured like any other field under Site administration > Courses >
+    Custom fields
+labels:
+  - fully-free
+links:
+  docs: https://github.com/pedrolois/moodle-customfield_keywords#readme
+  issues: https://github.com/pedrolois/moodle-customfield_keywords/issues
